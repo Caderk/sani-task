@@ -1,0 +1,51 @@
+Dado los wireframes adjuntos, consistente en un mantenedor de usuarios (CRUD), se solicita desarrollar una aplicaci�n web utilizando:
+
+	- SQL Server o ORACLE o MySQL para la base de datos
+	- .NET 8 para el backend
+	- ReactJS para el frontend
+
+Para ello, se deben realizar las siguientes actividades:
+
+1.- BASE DE DATOS
+
+	Crear el modelo de datos (Database First) consistente en una tabla de usuarios con los siguientes campos:
+
+	- Id (llave primaria)
+	- Nombre (hasta 50 caracteres)
+	- Rut (llave �nica)
+	- Correo (NULL)
+	- Fecha de nacimiento
+	
+2.- BACKEND
+
+	Implementar una API REST en .NET 8 con los endpoints para permitir las operaciones necesarias. Ejemplo: crear, modificar, borrar, leer y listar.
+	Utilizar Entity Framework Core para el acceso a datos.
+   
+3.- FRONTEND
+
+	Implementar el frontend utilizando ReactJS bas�ndose en los wireframes adjuntos.
+	Todos los campos son requeridos excepto el correo electr�nico.
+	
+EXTRAS: se consideran puntos extras agregar al desarrollo las siguientes caracter�sticas:
+
+	a.- Utilizar patrones de dise�os justificados (indicar qu� patrones se utiliz� y por qu�)
+	b.- Uso de herramientas que permitan almacenar log
+	c.- Un adecuado control de excepciones
+	d.- Uso de bootstrap en el frontend
+	e.- Uso de pruebas unitarias (unit tests)
+	f.- Paginaci�n de la grilla de usuarios y b�squeda sobre los resultados
+	g.- Ordenamiento de la grilla de usuarios para cada columna
+	h.- Agregar un bot�n que permita exportar la grilla a Excel
+	i.- Uso de alg�n tipo de seguridad (ejemplo: SSO, autenticaci�n/autorizaci�n, JWT, entre otros)
+	j.- Uso de docker para el despliegue
+
+La ENTREGA se debe realizar mediante un repositorio GIT de la siguiente forma:
+
+	1.- Script SQL que permite crear la tabla "USUARIO"
+	2.- API en .NET 8
+	3.- Frontend en ReactJS
+	4.- Readme.md con instrucciones para ambientar y compilar
+	5.- Alg�n documento o archivo de texto si se desea agregar alguna explicaci�n de la implementaci�n
+	6.- Cualquier otro que se considere necesario
+	
+!�xito!

@@ -1,0 +1,32 @@
+{
+	"folders": [
+		{
+			"name": "sani-task",
+			"path": ".."
+		},
+		{
+			"name": "docs",
+			"path": "../docs"
+		},
+		{
+			"name": "frontend-service",
+			"path": "../frontend-service"
+		},
+		{
+			"name": "users-service",
+			"path": "../users-service"
+		},
+		{
+			"name": "users-service-db",
+			"path": "../users-service-db"
+		},
+	],
+	"settings": {
+		"files.exclude": {
+			"frontend-service": true,
+			"users-service": true,
+			"users-service-db": true,
+			"docs": true
+		}
+	}
+}
