@@ -1,4 +1,4 @@
-namespace Dotnet8UsersCrud.Models
+namespace UsersService.Models
 {
     public class User
     {
