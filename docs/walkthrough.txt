@@ -1,2 +1,11 @@
 Set up .NET environment
 https://code.visualstudio.com/docs/languages/dotnet
+
+Install SDK in WSL
+https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install?tabs=dotnet8&pivots=os-linux-ubuntu-2410#tabpanel_1_dotnet8
+
+sudo apt-get update && \
+  sudo apt-get install -y dotnet-sdk-8.0
+
+dotnet new console
+dotnet run
