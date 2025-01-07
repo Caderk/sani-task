@@ -1,0 +1,22 @@
+services:
+  users-db:
+    build:
+      context: ./users-service-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=my-secret-pw
+      - MYSQL_DATABASE=users_db
+      - MYSQL_USER=users_user
+      - MYSQL_PASSWORD=users_pass
+      - MYSQL_TCP_PORT=3011
+    ports:
+      - "3011:3011"
+    volumes:
+      - users-db-data:/var/lib/mysql
+    networks:
+      - webnet
+
+networks:
+  webnet:
+
+volumes:
+  users-db-data:
