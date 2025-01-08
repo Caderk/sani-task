@@ -28,6 +28,18 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Server=users-db;Database=users_db;User=users_user;Password=users_pass;Port=3011;
       - ASPNETCORE_URLS=http://+:3010
+
+  frontend:
+    build:
+      context: ./frontend-service
+    environment:
+      - HOST=http://localhost
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    networks:
+      - webnet
+
 networks:
   webnet:
 
