@@ -11,17 +11,30 @@ interface User {
   birthday: string;
 }
 
+// Shape of server response from GET /api/users
+interface PagedResult {
+  page: number;
+  pageSize: number;
+  sort: string;
+  sortDir: string;
+  totalCount: number;
+  totalPages: number;
+  data: User[];
+}
+
 export default function Page() {
   // ---------------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------------
+  // Users retrieved from server
   const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
-  const [sortConfig, setSortConfig] = useState<{
-    key: keyof User | null;
-    direction: "asc" | "desc";
-  }>({ key: null, direction: "asc" });
+  // Pagination & Sorting State
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(5);
+  const [sort, setSort] = useState<string>("id");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [totalPages, setTotalPages] = useState<number>(1);
 
   // For the add user form
   const [showAddForm, setShowAddForm] = useState(false);
@@ -36,70 +49,79 @@ export default function Page() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  // For searching
-  const [searchTerm, setSearchTerm] = useState("");
-
   // ---------------------------------------------------------------------------
-  // Fetch Users
+  // Fetch Users from Server
   // ---------------------------------------------------------------------------
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch("http://localhost:3010/api/users");
-        if (!res.ok) {
-          throw new Error("Failed to fetch users");
-        }
-        const data: User[] = await res.json();
-        setUsers(data);
-        setFilteredUsers(data);
-      } catch (error) {
-        console.error(error);
+  async function fetchUsers(
+    pageVal: number,
+    pageSizeVal: number,
+    sortVal: string,
+    sortDirVal: "asc" | "desc"
+  ) {
+    try {
+      // Build query string with pagination & sorting
+      const url = `http://localhost:3010/api/users?page=${pageVal}&pageSize=${pageSizeVal}&sort=${sortVal}&sortDir=${sortDirVal}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error("Failed to fetch users");
       }
-    };
+      const data: PagedResult = await res.json();
+      // Update local states
+      setUsers(data.data);
+      setPage(data.page);
+      setPageSize(data.pageSize);
+      setSort(data.sort);
+      setSortDir(data.sortDir as "asc" | "desc");
+      setTotalPages(data.totalPages);
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
-    fetchUsers();
+  // Run on first load
+  useEffect(() => {
+    fetchUsers(page, pageSize, sort, sortDir);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Handle Sorting
+  // Handle Sorting (Server-Side)
   // ---------------------------------------------------------------------------
-  const handleSort = (key: keyof User) => {
-    let direction: "asc" | "desc" = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-
-    const sortedUsers = [...filteredUsers].sort((a, b) => {
-      let aStr = a[key] ? String(a[key]).toLowerCase() : "";
-      let bStr = b[key] ? String(b[key]).toLowerCase() : "";
-
-      // If you want null/empty to appear last, for example:
-      if (aStr === "" && bStr !== "") return 1;
-      if (bStr === "" && aStr !== "") return -1;
-
-      if (aStr < bStr) return direction === "asc" ? -1 : 1;
-      if (aStr > bStr) return direction === "asc" ? 1 : -1;
-      return 0;
-    });
-
-    setFilteredUsers(sortedUsers);
-  };
-
-  // ---------------------------------------------------------------------------
-  // Handle Search
-  // ---------------------------------------------------------------------------
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    if (!term) {
-      setFilteredUsers([...users]);
+  const handleSort = (newSort: string) => {
+    // If user clicks the same column, flip direction
+    if (sort === newSort) {
+      const newDir = sortDir === "asc" ? "desc" : "asc";
+      setSortDir(newDir);
+      fetchUsers(page, pageSize, newSort, newDir);
     } else {
-      const filtered = users.filter((user) =>
-        user.name.toLowerCase().includes(term.toLowerCase())
-      );
-      setFilteredUsers(filtered);
+      // Otherwise, set new column with default asc
+      setSort(newSort);
+      setSortDir("asc");
+      fetchUsers(page, pageSize, newSort, "asc");
     }
   };
+
+  // ---------------------------------------------------------------------------
+  // Pagination Controls
+  // ---------------------------------------------------------------------------
+  const handlePrevPage = () => {
+    if (page > 1) {
+      const newPage = page - 1;
+      setPage(newPage);
+      fetchUsers(newPage, pageSize, sort, sortDir);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (page < totalPages) {
+      const newPage = page + 1;
+      setPage(newPage);
+      fetchUsers(newPage, pageSize, sort, sortDir);
+    }
+  };
+
+  // If you want a direct "Go to page X" approach, you can add an input or
+  // numeric pager. But for simplicity, we use Prev/Next here.
 
   // ---------------------------------------------------------------------------
   // Handle Add User
@@ -117,11 +139,11 @@ export default function Page() {
         throw new Error("Failed to add user");
       }
 
+      // The server returns the newly created user
       const createdUser: User = await res.json();
-      // Update local states
-      const updatedUsers = [...users, createdUser];
-      setUsers(updatedUsers);
-      setFilteredUsers(updatedUsers);
+      // After adding, we should re-fetch the current page to see the updated list
+      // (Though if the new user is on a new page, you might not see it right away.)
+      fetchUsers(page, pageSize, sort, sortDir);
 
       // Reset form
       setNewUser({ name: "", rut: "", email: "", birthday: "" });
@@ -144,9 +166,8 @@ export default function Page() {
         throw new Error("Failed to delete user");
       }
 
-      const updatedUsers = users.filter((u) => u.id !== id);
-      setUsers(updatedUsers);
-      setFilteredUsers(updatedUsers);
+      // Re-fetch the current page data after deletion
+      fetchUsers(page, pageSize, sort, sortDir);
     } catch (error) {
       console.error(error);
     }
@@ -178,14 +199,11 @@ export default function Page() {
         throw new Error("Failed to update user");
       }
 
+      // The server returns the updated user
       const updatedUser: User = await res.json();
 
-      // Update local state
-      const updatedUsers = users.map((u) =>
-        u.id === updatedUser.id ? updatedUser : u
-      );
-      setUsers(updatedUsers);
-      setFilteredUsers(updatedUsers);
+      // Re-fetch the current page to see updated results
+      fetchUsers(page, pageSize, sort, sortDir);
 
       // Close form
       setShowEditForm(false);
@@ -199,7 +217,10 @@ export default function Page() {
   // Handle Export to Excel
   // ---------------------------------------------------------------------------
   const handleExportExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredUsers);
+    // We currently have only the single page of `users` in memory.
+    // This will export just this page.
+    // If you want *all* users, you'd need a separate endpoint or approach.
+    const worksheet = XLSX.utils.json_to_sheet(users);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
     XLSX.writeFile(workbook, "users_export.xlsx");
@@ -212,18 +233,7 @@ export default function Page() {
     <div style={{ padding: "1rem" }}>
       <h1>User Management</h1>
 
-      {/* Search Input */}
-      <div style={{ marginBottom: "1rem" }}>
-        <input
-          type="text"
-          placeholder="Search by Name"
-          value={searchTerm}
-          onChange={(e) => handleSearch(e.target.value)}
-          style={{ padding: "0.5rem", fontSize: "1rem" }}
-        />
-      </div>
-
-      {/* Table with Sorting */}
+      {/* Table with Server-Side Sorting */}
       <table border={1} cellPadding={8} cellSpacing={0} style={{ width: "100%" }}>
         <thead>
           <tr>
@@ -236,14 +246,16 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {filteredUsers.length > 0 ? (
-            filteredUsers.map((user) => (
+          {users.length > 0 ? (
+            users.map((user) => (
               <tr key={user.id}>
                 <td>{user.id}</td>
                 <td>{user.name}</td>
                 <td>{user.rut}</td>
                 <td>{user.email || ""}</td>
-                <td>{new Date(user.birthday).toLocaleDateString()}</td>
+                <td>
+                  {new Date(user.birthday).toLocaleDateString()}
+                </td>
                 <td>
                   <button onClick={() => openEditForm(user)}>Edit</button>{" "}
                   <button onClick={() => handleDeleteUser(user.id)}>Delete</button>
@@ -260,11 +272,24 @@ export default function Page() {
         </tbody>
       </table>
 
-      {/* Button to show Add Form */}
+      {/* Pagination Controls */}
+      <div style={{ marginTop: "1rem" }}>
+        <button disabled={page <= 1} onClick={handlePrevPage}>
+          Prev
+        </button>{" "}
+        <span style={{ margin: "0 1rem" }}>
+          Page {page} of {totalPages}
+        </span>
+        <button disabled={page >= totalPages} onClick={handleNextPage}>
+          Next
+        </button>
+      </div>
+
+      {/* Buttons to show Add Form & Export */}
       <div style={{ marginTop: "1rem" }}>
         <button onClick={() => setShowAddForm(true)}>Add New User</button>
         {"  "}
-        <button onClick={handleExportExcel}>Export to Excel</button>
+        <button onClick={handleExportExcel}>Export Current Page to Excel</button>
       </div>
 
       {/* Add New User Form (Modal) */}
@@ -323,13 +348,12 @@ export default function Page() {
                 <label>Email: </label>
                 <input
                   type="email"
-                  value={newUser.email}
+                  value={newUser.email || ""}
                   onChange={(e) => {
                     const val = e.target.value.trim();
-                    // If user typed nothing, set email to null
                     setNewUser((prev) => ({
                       ...prev,
-                      email: val === "" ? null : val
+                      email: val === "" ? null : val,
                     }));
                   }}
                 />
@@ -342,7 +366,10 @@ export default function Page() {
                   required
                   value={newUser.birthday}
                   onChange={(e) =>
-                    setNewUser((prev) => ({ ...prev, birthday: e.target.value }))
+                    setNewUser((prev) => ({
+                      ...prev,
+                      birthday: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -417,10 +444,9 @@ export default function Page() {
                   value={editingUser.email ?? ""}
                   onChange={(e) => {
                     const val = e.target.value.trim();
-                    // If user typed nothing, set email to null
                     setEditingUser((prev) => ({
                       ...prev,
-                      email: val === "" ? null : val
+                      email: val === "" ? null : val,
                     }));
                   }}
                 />
@@ -452,7 +478,6 @@ export default function Page() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
