@@ -46,6 +46,12 @@ app.MapGet("/api/users/{id}", async (int id, UsersDbContext db) =>
 // Create a new user
 app.MapPost("/api/users", async (User user, UsersDbContext db) =>
 {
+    // If the user did not provide an email or it's all whitespace, set it to null
+    if (string.IsNullOrWhiteSpace(user.Email))
+    {
+        user.Email = null;
+    }
+    
     db.Users.Add(user);
     await db.SaveChangesAsync();
     return Results.Created($"/api/users/{user.Id}", user);
