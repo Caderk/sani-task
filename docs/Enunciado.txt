@@ -29,15 +29,26 @@ Para ello, se deben realizar las siguientes actividades:
 EXTRAS: se consideran puntos extras agregar al desarrollo las siguientes caracter�sticas:
 
 	a.- Utilizar patrones de dise�os justificados (indicar qu� patrones se utiliz� y por qu�)
+	3 Tier Arquitecture, Presentacion - Aplicacion - Data
+	
 	b.- Uso de herramientas que permitan almacenar log
+	
 	c.- Un adecuado control de excepciones
+	
 	d.- Uso de bootstrap en el frontend
+	
 	e.- Uso de pruebas unitarias (unit tests)
+	
 	f.- Paginaci�n de la grilla de usuarios y b�squeda sobre los resultados
+	
 	g.- Ordenamiento de la grilla de usuarios para cada columna
+	
 	h.- Agregar un bot�n que permita exportar la grilla a Excel
+	
 	i.- Uso de alg�n tipo de seguridad (ejemplo: SSO, autenticaci�n/autorizaci�n, JWT, entre otros)
+	
 	j.- Uso de docker para el despliegue
+	listo
 
 La ENTREGA se debe realizar mediante un repositorio GIT de la siguiente forma:
 

@@ -4,22 +4,30 @@ using UsersService.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Retrieve connection string from environment variables or appsettings
-// "ConnectionStrings__DefaultConnection" is set in docker-compose
+// 1. Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<UsersDbContext>(options =>
 {
-    options.UseMySql(connectionString,
-        new MySqlServerVersion(new Version(8, 0, 0))); 
+    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0)));
 });
-
-// Add services to the container if needed, e.g., builder.Services.AddControllers(); 
-// (Not required for minimal APIs unless you want controllers)
 
 var app = builder.Build();
 
-// Example Minimal CRUD endpoints
+// 2. Use the CORS policy
+app.UseCors("AllowAll");
+
+// Minimal CRUD endpoints
 app.MapGet("/", () => "Hello from .NET 8 Users Service!");
 
 // Get all users
