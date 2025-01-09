@@ -323,9 +323,14 @@ export default function Page() {
                 <input
                   type="email"
                   value={newUser.email}
-                  onChange={(e) =>
-                    setNewUser((prev) => ({ ...prev, email: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value.trim();
+                    // If user typed nothing, set email to null
+                    setNewUser((prev) => ({
+                      ...prev,
+                      email: val === "" ? null : val
+                    }));
+                  }}
                 />
               </div>
 
@@ -409,9 +414,14 @@ export default function Page() {
                 <input
                   type="email"
                   value={editingUser.email ?? ""}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, email: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value.trim();
+                    // If user typed nothing, set email to null
+                    setEditingUser((prev) => ({
+                      ...prev,
+                      email: val === "" ? null : val
+                    }));
+                  }}
                 />
               </div>
 
