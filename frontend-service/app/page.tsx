@@ -71,11 +71,12 @@ export default function Page() {
     setSortConfig({ key, direction });
 
     const sortedUsers = [...filteredUsers].sort((a, b) => {
-      const aVal = a[key];
-      const bVal = b[key];
+      let aStr = a[key] ? String(a[key]).toLowerCase() : "";
+      let bStr = b[key] ? String(b[key]).toLowerCase() : "";
 
-      const aStr = String(aVal).toLowerCase();
-      const bStr = String(bVal).toLowerCase();
+      // If you want null/empty to appear last, for example:
+      if (aStr === "" && bStr !== "") return 1;
+      if (bStr === "" && aStr !== "") return -1;
 
       if (aStr < bStr) return direction === "asc" ? -1 : 1;
       if (aStr > bStr) return direction === "asc" ? 1 : -1;
