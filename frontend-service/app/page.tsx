@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 
-import { User, PagedResult } from "./types/user";
+import { User } from "./types/user";
 import {
   fetchPagedUsers,
   fetchAllUsersForExport,
@@ -19,9 +19,6 @@ import AddUserModal from "./components/AddUserModal";
 import EditUserModal from "./components/EditUserModal";
 
 export default function Page() {
-  // ---------------------------------------------
-  // State
-  // ---------------------------------------------
   const [users, setUsers] = useState<User[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -30,7 +27,6 @@ export default function Page() {
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Add new user modal
   const [showAddForm, setShowAddForm] = useState(false);
   const [newUser, setNewUser] = useState<Omit<User, "id">>({
     name: "",
@@ -39,21 +35,14 @@ export default function Page() {
     birthday: "",
   });
 
-  // Edit user modal
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  // ---------------------------------------------
-  // Fetch data on load
-  // ---------------------------------------------
   useEffect(() => {
     handleFetchUsers(page, pageSize, sort, sortDir, searchTerm);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---------------------------------------------
-  // Functions
-  // ---------------------------------------------
   async function handleFetchUsers(
     pageVal: number,
     pageSizeVal: number,
@@ -62,13 +51,7 @@ export default function Page() {
     searchVal: string
   ) {
     try {
-      const data = await fetchPagedUsers(
-        pageVal,
-        pageSizeVal,
-        sortVal,
-        sortDirVal,
-        searchVal
-      );
+      const data = await fetchPagedUsers(pageVal, pageSizeVal, sortVal, sortDirVal, searchVal);
       setUsers(data.data);
       setPage(data.page);
       setPageSize(data.pageSize);
@@ -81,7 +64,6 @@ export default function Page() {
   }
 
   function handleSearch() {
-    // reset to page=1 with new searchTerm
     handleFetchUsers(1, pageSize, sort, sortDir, searchTerm);
   }
 
@@ -111,14 +93,11 @@ export default function Page() {
     }
   }
 
-  // ---------------------------------------------
   // CRUD
-  // ---------------------------------------------
   async function handleAddUser(e: React.FormEvent) {
     e.preventDefault();
     try {
       await createUser(newUser);
-      // re-fetch current page
       handleFetchUsers(page, pageSize, sort, sortDir, searchTerm);
       setShowAddForm(false);
       setNewUser({ name: "", rut: "", email: "", birthday: "" });
@@ -154,9 +133,6 @@ export default function Page() {
     }
   }
 
-  // ---------------------------------------------
-  // Export
-  // ---------------------------------------------
   async function handleExportExcel() {
     try {
       const allData = await fetchAllUsersForExport(sort, sortDir, searchTerm);
@@ -169,36 +145,25 @@ export default function Page() {
     }
   }
 
-  // ---------------------------------------------
-  // Rendering
-  // ---------------------------------------------
   return (
-    <div style={{ padding: "1rem" }}>
-      <h1>User Management</h1>
+    <div className="container py-4">
+      <h1 className="mb-4">User Management</h1>
 
       {/* Search */}
-      <div style={{ marginBottom: "1rem" }}>
+      <div className="input-group mb-3" style={{ maxWidth: "400px" }}>
         <input
           type="text"
+          className="form-control"
           placeholder="Search by name or email"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ padding: "0.5rem", fontSize: "1rem" }}
         />
-        <button
-          onClick={handleSearch}
-          style={{
-            padding: "0.5rem 1rem",
-            fontSize: "1rem",
-            marginLeft: "0.5rem",
-            cursor: "pointer",
-          }}
-        >
+        <button className="btn btn-outline-primary" onClick={handleSearch}>
           Search
         </button>
       </div>
 
-      {/* Table */}
+      {/* User Table */}
       <UserTable
         users={users}
         onSort={handleSortClick}
@@ -215,10 +180,13 @@ export default function Page() {
       />
 
       {/* Buttons */}
-      <div style={{ marginTop: "1rem" }}>
-        <button onClick={() => setShowAddForm(true)}>Add New User</button>
-        {"  "}
-        <button onClick={handleExportExcel}>Export All Matching to Excel</button>
+      <div className="mt-3">
+        <button className="btn btn-success me-2" onClick={() => setShowAddForm(true)}>
+          Add New User
+        </button>
+        <button className="btn btn-secondary" onClick={handleExportExcel}>
+          Export All Matching to Excel
+        </button>
       </div>
 
       {/* Add Modal */}

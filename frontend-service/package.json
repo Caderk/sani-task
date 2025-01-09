@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "bootstrap": "^5.3.3",
     "file-saver": "^2.0.5",
     "next": "^15.1.4",
     "react": "^19.0.0",
