@@ -35,23 +35,26 @@ app.UseCors("AllowAll");
 //   - pageSize  (int) default=5
 //   - sort      (string) one of: id, name, rut, email, birthday (default=id)
 //   - sortDir   (string) asc or desc (default=asc)
+
+// GET /api/users
+// Query params:
+//   page, pageSize, sort, sortDir, search
 app.MapGet("/api/users", async (HttpRequest request, UsersDbContext db) =>
 {
-    // 1) Parse query parameters (page, pageSize, sort, sortDir)
     int page = 1;
     int pageSize = 5;
     string sort = "id";
     string sortDir = "asc";
+    string? searchTerm = null;
 
-    // page
+    // --- Parse pagination & sorting (same as before) ---
     if (request.Query.TryGetValue("page", out var pageVals) 
-        && int.TryParse(pageVals.ToString(), out int parsedPage)
+        && int.TryParse(pageVals.ToString(), out int parsedPage) 
         && parsedPage > 0)
     {
         page = parsedPage;
     }
 
-    // pageSize
     if (request.Query.TryGetValue("pageSize", out var pageSizeVals)
         && int.TryParse(pageSizeVals.ToString(), out int parsedPageSize)
         && parsedPageSize > 0)
@@ -59,70 +62,73 @@ app.MapGet("/api/users", async (HttpRequest request, UsersDbContext db) =>
         pageSize = parsedPageSize;
     }
 
-    // sort (id, name, rut, email, birthday)
     if (request.Query.TryGetValue("sort", out var sortVals))
     {
-        // e.g. sort=name or sort=email
         sort = sortVals.ToString().ToLower();
     }
 
-    // sortDir (asc or desc)
     if (request.Query.TryGetValue("sortDir", out var sortDirVals))
     {
         var candidate = sortDirVals.ToString().ToLower();
         if (candidate == "asc" || candidate == "desc")
-        {
             sortDir = candidate;
-        }
     }
 
-    // 2) Build a Queryable
+    // --- Parse 'search' ---
+    if (request.Query.TryGetValue("search", out var searchVals))
+    {
+        searchTerm = searchVals.ToString().ToLower().Trim();
+    }
+
+    // Start building the query
     IQueryable<User> query = db.Users.AsQueryable();
 
-    // 3) Apply sorting
-    //    Switch on the 'sort' field to pick which property to order by
-    //    Then apply ascending or descending order based on 'sortDir'
+    // --- Apply search if provided ---
+    if (!string.IsNullOrEmpty(searchTerm))
+    {
+        // In this example, searching by Name or Email
+        // (You could also include Rut or other fields.)
+        query = query.Where(u => 
+            u.Name.ToLower().Contains(searchTerm) 
+            || (u.Email ?? "").ToLower().Contains(searchTerm)
+        );
+    }
+
+    // --- Apply sorting (same logic as before) ---
     switch (sort)
     {
         case "name":
-            query = sortDir == "asc" 
-                ? query.OrderBy(u => u.Name) 
-                : query.OrderByDescending(u => u.Name);
+            query = (sortDir == "asc") ? query.OrderBy(u => u.Name)
+                                       : query.OrderByDescending(u => u.Name);
             break;
         case "rut":
-            query = sortDir == "asc" 
-                ? query.OrderBy(u => u.Rut) 
-                : query.OrderByDescending(u => u.Rut);
+            query = (sortDir == "asc") ? query.OrderBy(u => u.Rut)
+                                       : query.OrderByDescending(u => u.Rut);
             break;
         case "email":
-            query = sortDir == "asc" 
-                ? query.OrderBy(u => u.Email ?? "") 
-                : query.OrderByDescending(u => u.Email ?? "");
+            // Sort by Email or "" if null
+            query = (sortDir == "asc") ? query.OrderBy(u => u.Email ?? "")
+                                       : query.OrderByDescending(u => u.Email ?? "");
             break;
         case "birthday":
-            query = sortDir == "asc" 
-                ? query.OrderBy(u => u.Birthday) 
-                : query.OrderByDescending(u => u.Birthday);
+            query = (sortDir == "asc") ? query.OrderBy(u => u.Birthday)
+                                       : query.OrderByDescending(u => u.Birthday);
             break;
         case "id":
         default:
-            // default sort by ID
-            query = sortDir == "asc" 
-                ? query.OrderBy(u => u.Id) 
-                : query.OrderByDescending(u => u.Id);
+            query = (sortDir == "asc") ? query.OrderBy(u => u.Id)
+                                       : query.OrderByDescending(u => u.Id);
             break;
     }
 
-    // 4) Pagination
-    //    - Count total items
-    //    - Skip and Take the current page data
+    // --- Pagination ---
     var totalCount = await query.CountAsync();
     var items = await query
         .Skip((page - 1) * pageSize)
         .Take(pageSize)
         .ToListAsync();
 
-    // 5) Return a structured response
+    // Return structured response
     return Results.Ok(new
     {
         page,
@@ -134,6 +140,7 @@ app.MapGet("/api/users", async (HttpRequest request, UsersDbContext db) =>
         data = items
     });
 });
+
 
 // -----------------------------------------------------------------------------
 // GET /api/users/{id}

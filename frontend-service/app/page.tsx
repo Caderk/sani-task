@@ -11,7 +11,6 @@ interface User {
   birthday: string;
 }
 
-// Shape of server response from GET /api/users
 interface PagedResult {
   page: number;
   pageSize: number;
@@ -26,15 +25,15 @@ export default function Page() {
   // ---------------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------------
-  // Users retrieved from server
   const [users, setUsers] = useState<User[]>([]);
-
-  // Pagination & Sorting State
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(5);
   const [sort, setSort] = useState<string>("id");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [totalPages, setTotalPages] = useState<number>(1);
+
+  // For searching
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   // For the add user form
   const [showAddForm, setShowAddForm] = useState(false);
@@ -50,23 +49,32 @@ export default function Page() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
   // ---------------------------------------------------------------------------
-  // Fetch Users from Server
+  // Fetch Users from the server with pagination, sorting, and search
   // ---------------------------------------------------------------------------
-  async function fetchUsers(
+  const fetchUsers = async (
     pageVal: number,
     pageSizeVal: number,
     sortVal: string,
-    sortDirVal: "asc" | "desc"
-  ) {
+    sortDirVal: "asc" | "desc",
+    searchVal: string
+  ) => {
     try {
-      // Build query string with pagination & sorting
-      const url = `http://localhost:3010/api/users?page=${pageVal}&pageSize=${pageSizeVal}&sort=${sortVal}&sortDir=${sortDirVal}`;
-      const res = await fetch(url);
+      // Build query string
+      const url = new URL("http://localhost:3010/api/users");
+      url.searchParams.append("page", String(pageVal));
+      url.searchParams.append("pageSize", String(pageSizeVal));
+      url.searchParams.append("sort", sortVal);
+      url.searchParams.append("sortDir", sortDirVal);
+      if (searchVal.trim()) {
+        url.searchParams.append("search", searchVal.trim());
+      }
+
+      const res = await fetch(url.toString());
       if (!res.ok) {
         throw new Error("Failed to fetch users");
       }
+
       const data: PagedResult = await res.json();
-      // Update local states
       setUsers(data.data);
       setPage(data.page);
       setPageSize(data.pageSize);
@@ -76,39 +84,48 @@ export default function Page() {
     } catch (error) {
       console.error(error);
     }
-  }
+  };
 
-  // Run on first load
+  // Initial load
   useEffect(() => {
-    fetchUsers(page, pageSize, sort, sortDir);
+    fetchUsers(page, pageSize, sort, sortDir, searchTerm);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Handle Sorting (Server-Side)
+  // Search Handler (Server-Side)
+  // ---------------------------------------------------------------------------
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    // Reset to first page whenever we do a new search
+    const newPage = 1;
+    setPage(newPage);
+    fetchUsers(newPage, pageSize, sort, sortDir, term);
+  };
+
+  // ---------------------------------------------------------------------------
+  // Sorting (Server-Side)
   // ---------------------------------------------------------------------------
   const handleSort = (newSort: string) => {
-    // If user clicks the same column, flip direction
     if (sort === newSort) {
       const newDir = sortDir === "asc" ? "desc" : "asc";
       setSortDir(newDir);
-      fetchUsers(page, pageSize, newSort, newDir);
+      fetchUsers(page, pageSize, newSort, newDir, searchTerm);
     } else {
-      // Otherwise, set new column with default asc
       setSort(newSort);
       setSortDir("asc");
-      fetchUsers(page, pageSize, newSort, "asc");
+      fetchUsers(page, pageSize, newSort, "asc", searchTerm);
     }
   };
 
   // ---------------------------------------------------------------------------
-  // Pagination Controls
+  // Pagination
   // ---------------------------------------------------------------------------
   const handlePrevPage = () => {
     if (page > 1) {
       const newPage = page - 1;
       setPage(newPage);
-      fetchUsers(newPage, pageSize, sort, sortDir);
+      fetchUsers(newPage, pageSize, sort, sortDir, searchTerm);
     }
   };
 
@@ -116,12 +133,9 @@ export default function Page() {
     if (page < totalPages) {
       const newPage = page + 1;
       setPage(newPage);
-      fetchUsers(newPage, pageSize, sort, sortDir);
+      fetchUsers(newPage, pageSize, sort, sortDir, searchTerm);
     }
   };
-
-  // If you want a direct "Go to page X" approach, you can add an input or
-  // numeric pager. But for simplicity, we use Prev/Next here.
 
   // ---------------------------------------------------------------------------
   // Handle Add User
@@ -134,18 +148,13 @@ export default function Page() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser),
       });
-
       if (!res.ok) {
         throw new Error("Failed to add user");
       }
 
-      // The server returns the newly created user
-      const createdUser: User = await res.json();
-      // After adding, we should re-fetch the current page to see the updated list
-      // (Though if the new user is on a new page, you might not see it right away.)
-      fetchUsers(page, pageSize, sort, sortDir);
+      // Refetch the current page of results
+      await fetchUsers(page, pageSize, sort, sortDir, searchTerm);
 
-      // Reset form
       setNewUser({ name: "", rut: "", email: "", birthday: "" });
       setShowAddForm(false);
     } catch (error) {
@@ -161,13 +170,12 @@ export default function Page() {
       const res = await fetch(`http://localhost:3010/api/users/${id}`, {
         method: "DELETE",
       });
-
       if (!res.ok) {
         throw new Error("Failed to delete user");
       }
 
-      // Re-fetch the current page data after deletion
-      fetchUsers(page, pageSize, sort, sortDir);
+      // Refetch the current page
+      fetchUsers(page, pageSize, sort, sortDir, searchTerm);
     } catch (error) {
       console.error(error);
     }
@@ -194,18 +202,13 @@ export default function Page() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingUser),
       });
-
       if (!res.ok) {
         throw new Error("Failed to update user");
       }
 
-      // The server returns the updated user
-      const updatedUser: User = await res.json();
+      // Refetch the current page
+      await fetchUsers(page, pageSize, sort, sortDir, searchTerm);
 
-      // Re-fetch the current page to see updated results
-      fetchUsers(page, pageSize, sort, sortDir);
-
-      // Close form
       setShowEditForm(false);
       setEditingUser(null);
     } catch (error) {
@@ -214,16 +217,35 @@ export default function Page() {
   };
 
   // ---------------------------------------------------------------------------
-  // Handle Export to Excel
+  // Export to Excel (All Matching Current Search)
   // ---------------------------------------------------------------------------
-  const handleExportExcel = () => {
-    // We currently have only the single page of `users` in memory.
-    // This will export just this page.
-    // If you want *all* users, you'd need a separate endpoint or approach.
-    const worksheet = XLSX.utils.json_to_sheet(users);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-    XLSX.writeFile(workbook, "users_export.xlsx");
+  const handleExportExcel = async () => {
+    try {
+      // We'll fetch *all* matching rows (no pagination) for the *current* search
+      const url = new URL("http://localhost:3010/api/users");
+      // page=1, a large pageSize, same sort, sortDir, and searchTerm
+      url.searchParams.append("page", "1");
+      url.searchParams.append("pageSize", "999999");  // some large number
+      url.searchParams.append("sort", sort);
+      url.searchParams.append("sortDir", sortDir);
+      if (searchTerm.trim()) {
+        url.searchParams.append("search", searchTerm.trim());
+      }
+
+      const res = await fetch(url.toString());
+      if (!res.ok) {
+        throw new Error("Failed to fetch all matching users for export");
+      }
+      const data: PagedResult = await res.json();
+
+      // data.data now has all rows that match the current search
+      const worksheet = XLSX.utils.json_to_sheet(data.data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+      XLSX.writeFile(workbook, "users_export.xlsx");
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   // ---------------------------------------------------------------------------
@@ -233,7 +255,29 @@ export default function Page() {
     <div style={{ padding: "1rem" }}>
       <h1>User Management</h1>
 
-      {/* Table with Server-Side Sorting */}
+      {/* Search Input */}
+      <div style={{ marginBottom: "1rem" }}>
+        <input
+          type="text"
+          placeholder="Search by Name or Email"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ padding: "0.5rem", fontSize: "1rem" }}
+        />
+        <button
+          onClick={() => handleSearch(searchTerm)}
+          style={{
+            padding: "0.5rem 1rem",
+            fontSize: "1rem",
+            marginLeft: "0.5rem",
+            cursor: "pointer",
+          }}
+        >
+          Search
+        </button>
+      </div>
+
+      {/* Table */}
       <table border={1} cellPadding={8} cellSpacing={0} style={{ width: "100%" }}>
         <thead>
           <tr>
@@ -246,16 +290,14 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {users.length > 0 ? (
+          {users && users.length > 0 ? (
             users.map((user) => (
               <tr key={user.id}>
                 <td>{user.id}</td>
                 <td>{user.name}</td>
                 <td>{user.rut}</td>
                 <td>{user.email || ""}</td>
-                <td>
-                  {new Date(user.birthday).toLocaleDateString()}
-                </td>
+                <td>{new Date(user.birthday).toLocaleDateString()}</td>
                 <td>
                   <button onClick={() => openEditForm(user)}>Edit</button>{" "}
                   <button onClick={() => handleDeleteUser(user.id)}>Delete</button>
@@ -276,7 +318,7 @@ export default function Page() {
       <div style={{ marginTop: "1rem" }}>
         <button disabled={page <= 1} onClick={handlePrevPage}>
           Prev
-        </button>{" "}
+        </button>
         <span style={{ margin: "0 1rem" }}>
           Page {page} of {totalPages}
         </span>
@@ -285,14 +327,14 @@ export default function Page() {
         </button>
       </div>
 
-      {/* Buttons to show Add Form & Export */}
+      {/* Buttons */}
       <div style={{ marginTop: "1rem" }}>
         <button onClick={() => setShowAddForm(true)}>Add New User</button>
         {"  "}
-        <button onClick={handleExportExcel}>Export Current Page to Excel</button>
+        <button onClick={handleExportExcel}>Export All Matching to Excel</button>
       </div>
 
-      {/* Add New User Form (Modal) */}
+      {/* Add User Modal */}
       {showAddForm && (
         <div
           style={{
@@ -385,7 +427,7 @@ export default function Page() {
         </div>
       )}
 
-      {/* Edit User Form (Modal) */}
+      {/* Edit User Modal */}
       {showEditForm && editingUser && (
         <div
           style={{
@@ -419,8 +461,8 @@ export default function Page() {
                   type="text"
                   required
                   value={editingUser.name}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, name: e.target.value })
+                  onChange={(ev) =>
+                    setEditingUser({ ...editingUser, name: ev.target.value })
                   }
                 />
               </div>
@@ -431,8 +473,8 @@ export default function Page() {
                   type="text"
                   required
                   value={editingUser.rut}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, rut: e.target.value })
+                  onChange={(ev) =>
+                    setEditingUser({ ...editingUser, rut: ev.target.value })
                   }
                 />
               </div>
@@ -442,10 +484,10 @@ export default function Page() {
                 <input
                   type="email"
                   value={editingUser.email ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value.trim();
+                  onChange={(ev) => {
+                    const val = ev.target.value.trim();
                     setEditingUser((prev) => ({
-                      ...prev,
+                      ...prev!,
                       email: val === "" ? null : val,
                     }));
                   }}
@@ -462,8 +504,8 @@ export default function Page() {
                       ? new Date(editingUser.birthday).toISOString().slice(0, 10)
                       : ""
                   }
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, birthday: e.target.value })
+                  onChange={(ev) =>
+                    setEditingUser({ ...editingUser, birthday: ev.target.value })
                   }
                 />
               </div>

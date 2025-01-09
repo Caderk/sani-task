@@ -40,7 +40,8 @@ EXTRAS: se consideran puntos extras agregar al desarrollo las siguientes caracte
 	e.- Uso de pruebas unitarias (unit tests)
 	
 	f.- Paginaci�n de la grilla de usuarios y b�squeda sobre los resultados
-	
+	-
+
 	g.- Ordenamiento de la grilla de usuarios para cada columna
 	Listo
 
