@@ -95,7 +95,7 @@ To see the logs of the current execution run:
 docker compose logs
 ```
 
-To stop the containers run:
+To remove the containers run:
 ```bash
-docker compose stop
+docker compose down
 ```
