@@ -6,6 +6,7 @@
         "inventory-service": true,
         "inventory-service-db": true,
         "nginx": true,
-        "docs": true
+        "docs": true,
+        "tests":true
     }
 }
