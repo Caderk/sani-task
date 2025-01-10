@@ -1,4 +1,13 @@
 services:
+  users-service-tests:
+    build:
+      context: ./
+      dockerfile: ./tests/UsersService.Tests/Dockerfile
+    depends_on:
+      - users-service
+    networks:
+      - webnet
+
   users-db:
     build:
       context: ./users-service-db
