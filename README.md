@@ -1,5 +1,7 @@
 # Instructions (WSL Ubuntu environment)
 
+Deploying this project requires git, docker, and docker compose.
+
 ## Setting up Docker
 
 ### Installing Docker and Docker Compose
