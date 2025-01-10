@@ -36,23 +36,18 @@ EXTRAS: se consideran puntos extras agregar al desarrollo las siguientes caracte
 	c.- Un adecuado control de excepciones
 	
 	d.- Uso de bootstrap en el frontend
-	Listo
 
 	e.- Uso de pruebas unitarias (unit tests)
 	
 	f.- Paginaci�n de la grilla de usuarios y b�squeda sobre los resultados
-	Listo
 
 	g.- Ordenamiento de la grilla de usuarios para cada columna
-	Listo
 
 	h.- Agregar un bot�n que permita exportar la grilla a Excel
-	Listo
 	
 	i.- Uso de alg�n tipo de seguridad (ejemplo: SSO, autenticaci�n/autorizaci�n, JWT, entre otros)
 	
 	j.- Uso de docker para el despliegue
-	Listo
 
 La ENTREGA se debe realizar mediante un repositorio GIT de la siguiente forma:
 
